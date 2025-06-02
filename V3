@@ -1,0 +1,221 @@
+// This Pine Script™ code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © Infinity_Algo
+
+//██╗███╗░░██╗███████╗██╗███╗░░██╗██╗████████╗██╗░░░██╗░█████╗░██╗░░░░░░██████╗░░█████╗░
+//██║████╗░██║██╔════╝██║████╗░██║██║╚══██╔══╝╚██╗░██╔╝██╔══██╗██║░░░░░██╔════╝░██╔══██╗
+//██║██╔██╗██║█████╗░░██║██╔██╗██║██║░░░██║░░░░╚████╔╝░███████║██║░░░░░██║░░██╗░██║░░██║
+//██║██║╚████║██╔══╝░░██║██║╚████║██║░░░██║░░░░░╚██╔╝░░██╔══██║██║░░░░░██║░░╚██╗██║░░██║
+//██║██║░╚███║██║░░░░░██║██║░╚███║██║░░░██║░░░░░░██║░░░██║░░██║███████╗╚██████╔╝╚█████╔╝
+//╚═╝╚═╝░░╚══╝╚═╝░░░░░╚═╝╚═╝░░╚══╝╚═╝░░░╚═╝░░░░░░╚═╝░░░╚═╝░░╚═╝╚══════╝░╚═════╝░░╚════╝░
+
+
+//@version=6
+indicator('InfinityAlgo V3', overlay = true)
+import TradingView/ta/7
+
+// Setting
+showsignals = input(title = 'Show Signals', defval = true, group = 'Signals [IA Algo]')
+sensitivity = input.int(title = 'Sensibility (1-20)', defval = 7, minval = 1, maxval = 45, group = 'Signals [IA Algo]') + 1
+
+levels = input.bool(false, 'Take Profit/Stop Loss Point', group = 'Risk management [IA Algo]', inline = 'MMDB2')
+lvlLines = true
+linesStyle = 'SOLID'
+lvlDistance = input.int(20, 'Distance', 1, inline = 'levels2', group = 'Risk management [IA Algo]')
+lvlDecimals = input.int(2, 'Decimal Number', 1, 8, inline = 'levels2', group = 'Risk management [IA Algo]')
+atrRisk = input.int(1, 'Risk', 1, group = 'Risk management [IA Algo]', inline = 'levels3')
+atrLen = input.int(14, 'ATR Distance', 1, group = 'Risk management [IA Algo]', inline = 'levels3')
+
+ShowSmartTrail = input(true, 'Smart tracking', group = 'TOOLS [IA Algo]')
+show_rev = input.bool(true, 'Reversal Cloud', group = 'TOOLS [IA Algo]')
+TrendFollower = input(true, 'Trend Following', group = 'TOOLS [IA Algo]')
+
+Periods = sensitivity * 10
+src = hl2
+Multiplier = sensitivity / 2
+changeATR = true
+highlighting = false
+atr2 = ta.sma(ta.tr, Periods)
+atr = changeATR ? ta.atr(Periods) : atr2
+up = src - Multiplier * atr
+up1 = nz(up[1], up)
+up := close[1] > up1 ? math.max(up, up1) : up
+dn = src + Multiplier * atr
+dn1 = nz(dn[1], dn)
+dn := close[1] < dn1 ? math.min(dn, dn1) : dn
+trend = 1
+trend := nz(trend[1], trend)
+trend := trend == -1 and close > dn1 ? 1 : trend == 1 and close < up1 ? -1 : trend
+buySignal = trend == 1 and trend[1] == -1
+plotshape(buySignal and showsignals ? up : na, title = 'AI', text = 'AI Signals', location = location.absolute, style = shape.labelup, size = size.normal, color = #00ff00, textcolor = color.new(color.black, 0))
+sellSignal = trend == -1 and trend[1] == 1
+plotshape(sellSignal and showsignals ? dn : na, title = 'AI', text = 'AI Signals', location = location.absolute, style = shape.labeldown, size = size.normal, color = #ff0000, textcolor = color.new(color.white, 0))
+
+alertcondition(buySignal, title = 'IA Algo Buy', message = 'IA Algo Buy! Message')
+alertcondition(sellSignal, title = 'IA Algo Sell', message = 'IA Algo Sell! Message')
+changeCond = trend != trend[1]
+alertcondition(changeCond, title = 'IA Algo Change of Direction!', message = 'IA Algo Change of Direction!')
+
+// This Pine Script™ code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © Infinity_Algo
+
+//██╗███╗░░██╗███████╗██╗███╗░░██╗██╗████████╗██╗░░░██╗░█████╗░██╗░░░░░░██████╗░░█████╗░
+//██║████╗░██║██╔════╝██║████╗░██║██║╚══██╔══╝╚██╗░██╔╝██╔══██╗██║░░░░░██╔════╝░██╔══██╗
+//██║██╔██╗██║█████╗░░██║██╔██╗██║██║░░░██║░░░░╚████╔╝░███████║██║░░░░░██║░░██╗░██║░░██║
+//██║██║╚████║██╔══╝░░██║██║╚████║██║░░░██║░░░░░╚██╔╝░░██╔══██║██║░░░░░██║░░╚██╗██║░░██║
+//██║██║░╚███║██║░░░░░██║██║░╚███║██║░░░██║░░░░░░██║░░░██║░░██║███████╗╚██████╔╝╚█████╔╝
+//╚═╝╚═╝░░╚══╝╚═╝░░░░░╚═╝╚═╝░░╚══╝╚═╝░░░╚═╝░░░░░░╚═╝░░░╚═╝░░╚═╝╚══════╝░╚═════╝░░╚════╝░
+// Infinity Algo V3
+
+// Candle Coloring
+// Input
+fastLength = 25
+slowLength = 55
+signalLength = 9
+
+// Data reference
+[macd, signal, hist] = ta.macd(src, fastLength, slowLength, signalLength)
+
+// 4 level of green
+greenHigh = color.rgb(0, 188, 212)
+greenMidHigh = color.rgb(0, 188, 212)
+greenMidLow = color.rgb(0, 188, 212)
+greenLow = color.rgb(0, 188, 212)
+
+// Yellow
+yellowLow = color.rgb(0, 230, 118)
+
+// 4 level of red
+redHigh = color.rgb(156, 39, 176)
+redMidHigh = color.rgb(156, 39, 176)
+redMidLow = color.rgb(156, 39, 176)
+redLow = color.rgb(156, 39, 176)
+
+// Default color
+candleBody = yellowLow
+
+// Ranging trend
+if hist > 0
+    if hist > hist[1] and hist[1] > 0
+        candleBody := greenLow
+        candleBody
+
+if hist < 0
+    if hist < hist[1] and hist[1] < 0
+        candleBody := redLow
+        candleBody
+
+// Bullish trend
+if macd > 0 and hist > 0
+    candleBody := greenMidLow
+
+    if hist > hist[1] and macd[1] > 0 and hist[1] > 0
+        candleBody := greenMidHigh
+
+        if hist > hist[2] and macd[2] > 0 and hist[2] > 0
+            candleBody := greenHigh
+            candleBody
+
+// Bearish trend
+if macd < 0 and hist < 0
+    candleBody := redMidLow
+
+    if hist < hist[1] and macd[1] < 0 and hist[1] < 0
+        candleBody := redMidHigh
+
+        if hist < hist[2] and macd[2] < 0 and hist[2] < 0
+            candleBody := redHigh
+            candleBody
+
+barcolor(candleBody) // Include suggestion by Shaheen204
+
+// Smart Trail
+
+// inputs //
+//{
+
+trailType = 'modified'
+ATRPeriod = 13
+ATRFactor = 4
+smoothing = 8
+
+norm_o = request.security(ticker.new(syminfo.prefix, syminfo.ticker), timeframe.period, open)
+norm_h = request.security(ticker.new(syminfo.prefix, syminfo.ticker), timeframe.period, high)
+norm_l = request.security(ticker.new(syminfo.prefix, syminfo.ticker), timeframe.period, low)
+norm_c = request.security(ticker.new(syminfo.prefix, syminfo.ticker), timeframe.period, close)
+//}
+// This Pine Script™ code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © Infinity_Algo
+
+//██╗███╗░░██╗███████╗██╗███╗░░██╗██╗████████╗██╗░░░██╗░█████╗░██╗░░░░░░██████╗░░█████╗░
+//██║████╗░██║██╔════╝██║████╗░██║██║╚══██╔══╝╚██╗░██╔╝██╔══██╗██║░░░░░██╔════╝░██╔══██╗
+//██║██╔██╗██║█████╗░░██║██╔██╗██║██║░░░██║░░░░╚████╔╝░███████║██║░░░░░██║░░██╗░██║░░██║
+//██║██║╚████║██╔══╝░░██║██║╚████║██║░░░██║░░░░░╚██╔╝░░██╔══██║██║░░░░░██║░░╚██╗██║░░██║
+//██║██║░╚███║██║░░░░░██║██║░╚███║██║░░░██║░░░░░░██║░░░██║░░██║███████╗╚██████╔╝╚█████╔╝
+//╚═╝╚═╝░░╚══╝╚═╝░░░░░╚═╝╚═╝░░╚══╝╚═╝░░░╚═╝░░░░░░╚═╝░░░╚═╝░░╚═╝╚══════╝░╚═════╝░░╚════╝░
+
+//////// FUNCTIONS //////////////
+//{
+// Wilders ma //
+Wild_ma(_src, _malength) =>
+    _wild = 0.0
+    _wild := nz(_wild[1]) + (_src - nz(_wild[1])) / _malength
+    _wild
+
+/////////// TRUE RANGE CALCULATIONS ///////////////// 
+HiLo = math.min(norm_h - norm_l, 1.5 * nz(ta.sma(norm_h - norm_l, ATRPeriod)))
+
+HRef = norm_l <= norm_h[1] ? norm_h - norm_c[1] : norm_h - norm_c[1] - 0.5 * (norm_l - norm_h[1])
+
+LRef = norm_h >= norm_l[1] ? norm_c[1] - norm_l : norm_c[1] - norm_l - 0.5 * (norm_l[1] - norm_h)
+
+trueRange = trailType == 'modified' ? math.max(HiLo, HRef, LRef) : math.max(norm_h - norm_l, math.abs(norm_h - norm_c[1]), math.abs(norm_l - norm_c[1]))
+//}
+
+
+/////////// TRADE LOGIC ////////////////////////
+//{
+loss = ATRFactor * Wild_ma(trueRange, ATRPeriod)
+
+Up = norm_c - loss
+Dn = norm_c + loss
+
+TrendUp = Up
+TrendDown = Dn
+Trend = 1
+
+TrendUp := norm_c[1] > TrendUp[1] ? math.max(Up, TrendUp[1]) : Up
+TrendDown := norm_c[1] < TrendDown[1] ? math.min(Dn, TrendDown[1]) : Dn
+
+Trend := norm_c > TrendDown[1] ? 1 : norm_c < TrendUp[1] ? -1 : nz(Trend[1], 1)
+trail = Trend == 1 ? TrendUp : TrendDown
+
+ex = 0.0
+ex := ta.crossover(Trend, 0) ? norm_h : ta.crossunder(Trend, 0) ? norm_l : Trend == 1 ? math.max(ex[1], norm_h) : Trend == -1 ? math.min(ex[1], norm_l) : ex[1]
+//}
+
+// //////// PLOT TP and SL /////////////
+
+////// FIBONACCI LEVELS ///////////
+//{
+state = Trend == 1 ? 'long' : 'short'
+
+fib1Level = 61.8
+fib2Level = 78.6
+fib3Level = 88.6
+
+f1 = ex + (trail - ex) * fib1Level / 100
+f2 = ex + (trail - ex) * fib2Level / 100
+f3 = ex + (trail - ex) * fib3Level / 100
+l100 = trail + 0
+
+fill(plot(ShowSmartTrail ? ta.sma(trail, smoothing) : na, 'Trailingstop', style = plot.style_line, color = Trend == 1 ? color.new(#14ff34, 0) : Trend == -1 ? color.new(#ff0015, 0) : na), plot(ShowSmartTrail ? ta.sma(f2, smoothing) : na, 'Fib 2', style = plot.style_line, display = display.none), color = state == 'long' ? color.rgb(224, 64, 251) : state == 'short' ? color.rgb(255, 152, 0) : na)
+//}
+// This Pine Script™ code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © Infinity_Algo
+
+//██╗███╗░░██╗███████╗██╗███╗░░██╗██╗████████╗██╗░░░██╗░█████╗░██╗░░░░░░██████╗░░█████╗░
+//██║████╗░██║██╔════╝██║████╗░██║██║╚══██╔══╝╚██╗░██╔╝██╔══██╗██║░░░░░██╔════╝░██╔══██╗
+//██║██╔██╗██║█████╗░░██║██╔██╗██║██║░░░██║░░░░╚████╔╝░███████║██║░░░░░██║░░██╗░██║░░██║
+//██║██║╚████║██╔══╝░░██║██║╚████║██║░░░██║░░░░░╚██╔╝░░██╔══██║██║░░░░░██║░░╚██╗██║░░██║
+//██║██║░╚███║██║░░░░░██║██║░╚███║██║░░░██║░░░░░░██║░░░██║░░██║███████╗╚██████╔╝╚█████╔╝
+//╚═╝╚═╝░░╚══╝╚═╝░░░░░╚═╝╚═╝░░╚══╝╚═╝░░░╚═╝░░░░░░╚═╝░░░╚═╝░░╚═╝╚══════╝░╚═════╝░░╚════╝░
